@@ -2,7 +2,7 @@ import os,sys
 import time
 import datetime
 import string
-import example2
+import core
 import config
 
 #TO DO:
@@ -75,27 +75,17 @@ def convertSecToHr(timeInSeconds,remainder):
 def parseString(str, delimiter):
 	return str.split(delimiter)
 
-def loadFile(activityDict,filename):
+def loadFile(activityDict,filename,write):
 
 	#Note: race condition exists:
 	#https://stackoverflow.com/questions/273192/how-to-check-if-a-directory-exists-and-create-it-if-necessary
 
 	if not filename:
-		d = datetime.date
-		tDay = d.fromtimestamp(time.time())
-		mDir = str(tDay.month) + "-" + str(tDay.year)
-
-		dirPath = './timeTrackerLogs/' + str(mDir)
-		if not os.path.exists(dirPath):
-			os.makedirs(dirPath)
-		relativePath = dirPath+'/'
-
-	#FIX FILE NAME before commit
-	filename = relativePath + str(datetime.date.today()) + "-log.txt"
-	readFile(filename,activityDict)
+		filename = core.getFileName(0,write)
+	readFile(filename,activityDict,write)
 	return filename
 
-def readFile(filename,activityDict):
+def readFile(filename,activityDict,write):
 	try:
 		inFile = open(filename, 'r')
 		#print "Successfully opened: " + filename
@@ -110,9 +100,10 @@ def readFile(filename,activityDict):
 	except IOError:
 		# try to create the file
 		try:
-			outFile = open(filename, 'w')
-			print "Successfully created: " + filename
-			outFile.close()
+			if write:
+				outFile = open(filename, 'w')
+				print "Successfully created: " + filename
+				outFile.close()
 		except IOError:
 			print "Error: File does not exist"
 
@@ -170,7 +161,7 @@ def showPreviousLogs():
 	#wait for user response
 
 
-def trackTime(activityDict):
+def trackTime(activityDict,filename):
 	userInput = ""
 
 	while userInput != str(3) or userInput != str(4):
@@ -216,7 +207,7 @@ def trackTime(activityDict):
 		elif userInput == str(3):
 			print "Not currently implemented."
 		elif userInput == str(4):
-			print "Not currently implemented."
+			showWeekStats()
 		elif userInput == str(5):
 			showPreviousLogs()
 		elif userInput == str(6):
@@ -224,7 +215,7 @@ def trackTime(activityDict):
 		else:
 			print "Enter a valid option..."
 
-		saveFile(activityDict)
+		saveFile(activityDict,filename)
 
 def saveFile(activityDict,filename):
 	#if time is different, create a new file
@@ -249,8 +240,13 @@ def showWeekStats():
 	weeklyStatDict = {}
 	filename=""
 
+	cnt = core.getDayOfWeek()
+	for x in xrange(0,cnt):
+		filename=core.getFileName(x,False)
+		loadFile(weeklyStatDict,filename,False)
+	print weeklyStatDict
 	#loadFiles
-	loadFile(weeklyStatDict,filename)
+	#loadFile(weeklyStatDict,filename)
 
 #def categorizeActivities(activityDict):
 
@@ -265,8 +261,8 @@ if __name__ == "__main__":
 	# declare a list
 	activityDict = {} 
 
-	filename = loadFile(activityDict,filename)
-	trackTime(activityDict)
+	filename = loadFile(activityDict,filename,True)
+	trackTime(activityDict,filename)
 	saveFile(activityDict,filename)
 
 	endTime = time.time()
